@@ -1,0 +1,8 @@
+import app from "./src/app.js";
+
+app.listen(3000, () => {
+   console.log("server is running on port 3000");
+});
+
+// https://c-1.mreadercdn.com/_v2/1/0dcb8f9eaacfd940603bd75c7c152919c72e45517dcfb1087df215e3be94206cfdf45f64815888ea0749af4c0ae5636fabea0abab8c2e938ab3ad7367e9bfa52/94/e6/94e66a1fecab471076a6375c5261657f/94e66a1fecab471076a6375c5261657f_1600.jpeg?t=515363393022bbd440b0b7d9918f291a&ttl=1908547557
+// https://c-1.mreadercdn.com/_v2/0/0dcb8f9eaacfd940603bd75c7c152919c72e45517dcfb1087df215e3be94206cfdf45f64815888ea0749af4c0ae5636fabea0abab8c2e938ab3ad7367e9bfa52/3a/b8/3ab8204b69aef71f48212de4c00d70f3/3ab8204b69aef71f48212de4c00d70f3_1600.jpeg?t=515363393022bbd440b0b7d9918f291a&amp;ttl=1908547557

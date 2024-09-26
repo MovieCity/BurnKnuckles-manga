@@ -1,0 +1,26 @@
+{
+   "name": "puppeteer-tutorial",
+   "version": "1.0.0",
+   "description": "",
+   "main": "server.js",
+   "type": "module",
+   "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1",
+      "dev": "nodemon server.js",
+      "start": "node server.js"
+   },
+   "keywords": [],
+   "author": "",
+   "license": "ISC",
+   "dependencies": {
+      "axios": "^1.7.7",
+      "canvas": "^2.11.2",
+      "chalk": "^5.3.0",
+      "cheerio": "^1.0.0",
+      "express": "^4.21.0",
+      "puppeteer": "^23.3.0"
+   },
+   "devDependencies": {
+      "nodemon": "^3.1.4"
+   }
+}
