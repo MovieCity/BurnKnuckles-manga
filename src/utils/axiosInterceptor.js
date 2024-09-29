@@ -1,8 +1,16 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
+const baseUrl = "https://mangareader.to";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const filepath = path.join(__dirname, "../../outputs");
 
 const axiosInterceptor = async (endpoint) => {
-   const baseUrl = "https://mangareader.to";
    console.log(baseUrl + endpoint);
    try {
       const { data } = await axios.get(baseUrl + endpoint);
@@ -12,26 +20,26 @@ const axiosInterceptor = async (endpoint) => {
       return error.message;
    }
 };
-const getChaptersUrls = async (Referer, endpoint) => {
-   try {
-      const baseUrl = "https://mangareader.to";
-      console.log(`${baseUrl}/ajax/image/list/${endpoint}`);
-      console.log(Referer);
+// 2 main urls
+// https://mangareader.to/ajax/manga/reading-list/56380?readingBy=vol
+// https://mangareader.to/ajax/images/list/chap/65103?mode=vertical&quality=high&hozPageSize=1
 
-      const {
-         data: { html },
-      } = await axios.get(`${baseUrl}/ajax/image/list/${endpoint}`, {
+const fetchAPI = async (Referer, endpoint) => {
+   try {
+      console.log(baseUrl + endpoint);
+
+      const { data } = await axios.get(baseUrl + endpoint, {
          headers: {
             "User-Agent":
                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0",
-            Referer,
+            Referer: baseUrl + Referer,
             "X-Requested-With": "XMLHttpRequest",
          },
       });
-      const $ = cheerio.load(html);
-      return $;
+
+      return data.html;
    } catch (error) {
       return error.message;
    }
 };
-export { axiosInterceptor, getChaptersUrls };
+export { axiosInterceptor, fetchAPI };

@@ -1,6 +1,6 @@
 import express from "express";
 import {
-   getChapters,
+   getList,
    getChaptersImages,
    getCompleted,
    getGenres_types_sort,
@@ -22,11 +22,10 @@ router.get("/completed", getCompleted);
 router.get("/recommended", getRecommended);
 router.get("/latest-updates", getLatestUpdates);
 router.get("/most-viewed", mostViewed);
-router.get("/all/:query/:category", getMangaByQueryAndCategory);
-router.get("/all/:query", getMangaByQueryAndCategory);
+router.get("/all/:query/:category?", getMangaByQueryAndCategory);
 router.get("/search", getMangaBySearch);
 router.get("/info/:id", getInfo);
-router.get("/chapters/:id", getChapters);
-router.get("/read/:id/:lang/:chapterNumber", getChaptersImages);
+router.get("/list/:id", getList);
+router.get("/read/:id/:readingId", getChaptersImages);
 
 export default router;

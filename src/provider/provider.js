@@ -1,7 +1,6 @@
-import * as cheerio from "cheerio";
-
 import { mainPageExtractor, homePageExtractor } from "../utils/extractor.js";
-import { axiosInterceptor, getChaptersUrls } from "../utils/axiosInterceptor.js";
+import { axiosInterceptor, fetchAPI } from "../utils/axiosInterceptor.js";
+import * as cheerio from "cheerio";
 
 export const getTrending = (req, res) => homePageExtractor("#trending-home", res);
 export const getRecommended = (req, res) => homePageExtractor("#featured-03", res);
@@ -245,7 +244,10 @@ export const getInfo = async (req, res) => {
          title: null,
          alternativeTitle: null,
          poster: null,
-         languages: [],
+         languages: {
+            chaptersLanguages: [],
+            volumesLanguages: [],
+         },
          genres: [],
          synopsis: null,
          type: null,
@@ -293,11 +295,11 @@ export const getInfo = async (req, res) => {
                obj.magazines = itemValue || null;
                break;
             case "Published:":
-               const dateParts = itemValue.split(" to ");
-               const startDate = new Date(dateParts[0].trim());
+               const date = itemValue !== "?" ? itemValue.split(" to ") : null;
+               const startDate = date ? new Date(date[0].trim()) : null;
                let endDate = null;
-               if (dateParts[1].trim() !== "?") {
-                  endDate = new Date(dateParts[1].trim());
+               if (date && date[1].trim() !== "?") {
+                  endDate = new Date(date[1].trim()) || null;
                }
                obj.published = startDate || null;
                obj.endDate = endDate;
@@ -313,21 +315,36 @@ export const getInfo = async (req, res) => {
                break;
          }
       });
-      const $readingHtml = $(".tab-content");
 
-      const languages = $($readingHtml).find(".chapter-s-lang .dropdown-menu").first().find("a");
+      const chaptersList = $(".tab-content #list-chapter");
+      const volumesList = $(".tab-content #list-vol");
 
-      languages.each((index, item) => {
-         const languageElement = $(item).attr("data-code").toUpperCase();
+      const chaptersLanguages = chaptersList
+         ? $(chaptersList).find(".chapter-s-lang .dropdown-menu").find("a")
+         : null;
+      const volumesLanguages = chaptersList
+         ? $(volumesList).find(".chapter-s-lang .dropdown-menu").find("a")
+         : null;
 
-         obj.languages.push(languageElement);
-      });
+      chaptersLanguages &&
+         chaptersLanguages
+            .map((i, el) => {
+               const languageElement = $(el).attr("data-code").toUpperCase();
 
-      const hasChapters = $($readingHtml).has("#list-chapter") || null;
-      const hasVolumes = $($readingHtml).has("#list-vol") || null;
+               obj.languages.chaptersLanguages.push(languageElement);
+            })
+            .get();
+      volumesLanguages &&
+         volumesLanguages
+            .map((i, el) => {
+               const languageElement = $(el).attr("data-code").toUpperCase();
 
-      const lastChapterMatch = hasChapters
-         ? $($readingHtml)
+               obj.languages.volumesLanguages.push(languageElement);
+            })
+            .get();
+
+      const lastChapterMatch = chaptersLanguages
+         ? $(".tab-content")
               .find(".chapters-list-ul #en-chapters .item .name")
               .first()
               .text()
@@ -336,8 +353,8 @@ export const getInfo = async (req, res) => {
       const lastChapter = lastChapterMatch ? lastChapterMatch[0] : null; // Use [0] instead of [1] if there's only one group
       console.log(lastChapter);
 
-      const lastVolumeMatch = hasVolumes
-         ? $($readingHtml)
+      const lastVolumeMatch = volumesLanguages
+         ? $(".tab-content")
               .find(".volume-list-ul #en-volumes .item .tick-vol")
               .first()
               .text()
@@ -354,51 +371,57 @@ export const getInfo = async (req, res) => {
    }
 };
 
-export const getChapters = async (req, res) => {
+export const getList = async (req, res) => {
    try {
+      const readBy = req.query.readBy || "chap";
+      const lang = req.query.lang || "en";
       const id = req.params.id;
       if (!id) return res.status(400).json({ status: "error", msg: "id is require" });
-      const $ = await axiosInterceptor(`/${id}`);
 
-      const chaptersLanguages = $(".chapter-s-lang .dropdown-menu")
-         .first()
-         .find("a")
-         .map((index, item) => {
+      const mangaID = id.split("-").at(-1);
+
+      const Referer = `/${id}`;
+      const endpoint = `/ajax/manga/reading-list/${mangaID}?readingBy=${readBy}`;
+      const html = await fetchAPI(Referer, endpoint);
+
+      const $ = cheerio.load(html);
+      const $poster = readBy === "vol" ? await axiosInterceptor(`/${id}`) : null;
+
+      const getVolumesImages = (lang, index) => {
+         return $poster(`.volume-list-ul #${lang.toLowerCase()}-volumes .item .manga-poster-img`)
+            .eq(index)
+            .attr("src");
+      };
+
+      const selected = readBy === "chap" ? "chapters" : "volumes";
+
+      const elements = $(`.chapters-list-ul #${lang.toLowerCase()}-${selected}`);
+
+      if (elements.length < 1)
+         return res
+            .status(400)
+            .json({ status: false, message: `maybe ${selected} not available in ${lang}` });
+
+      const data = $(elements)
+         .find("li")
+         .map((i, el) => {
             const obj = {
-               language: null,
-               chapters: null,
-            };
-
-            const languageText = $(item).text().trim();
-            const chaptersMatch = languageText.match(/\((\d+)\s+chapters\)/);
-
-            obj.language = $(item).attr("data-code");
-            obj.chapters = chaptersMatch ? Number(chaptersMatch[1]) : null;
-            return [obj];
-         })
-         .get();
-
-      const chapters = $(`.chapters-list-ul #en-chapters .item`)
-         .map((index, el) => {
-            const obj = {
-               chapterNumber: null,
+               readingId: null,
+               dataNumber: null,
                title: null,
             };
 
-            const number = $(el).attr("data-number");
-            obj.chapterNumber = Number(number) || null;
-            const title = $(el).find("a").attr("title").split(":")[1].trim();
+            obj.readingId = Number($(el).attr("data-id"));
+            obj.dataNumber = Number($(el).attr("data-number"));
+            obj.title = $(el).find(".name").text().split(":").at(-1).trim();
+            if (selected === "volumes") obj.poster = getVolumesImages(lang, i);
 
-            obj.title = title || null;
             return obj;
          })
          .get();
 
-      const chaptersSort = chapters.sort((a, b) => a.chapterNumber - b.chapterNumber);
-      return res.status(200).json({
-         status: "success",
-         data: { languages: chaptersLanguages, chapters: chaptersSort },
-      });
+      data.sort((a, b) => a[selected] - b[selected]);
+      res.status(200).json({ status: true, language: lang, dataBy: selected, data });
    } catch (error) {
       return res.status(500).json({ status: "error", msg: error.message });
    }
@@ -406,33 +429,40 @@ export const getChapters = async (req, res) => {
 
 export const getChaptersImages = async (req, res) => {
    try {
-      const { id, lang, chapterNumber } = req.params;
+      // https://mangareader.to/read/one-piece-3/readingId
+      const { readingId, id } = req.params;
+      const type = req.query.type || "chap";
 
-      if (!id || !lang || !chapterNumber)
-         return res.status(400).json({ status: "error", msg: "params is require" });
+      console.log(readingId, id);
 
-      const Referer = `/read/${id}/${lang}/chapter-${chapterNumber}`;
+      if (!readingId || !id)
+         return res.status(400).json({ status: "error", msg: " readingId is require" });
 
-      const $getInfo = await axiosInterceptor(Referer);
+      const endpoint = `/ajax/image/list/${type}/${readingId}?mode=vertical&quality=high&hozPageSize=1`;
+      //               /ajax/image/list/chap/8954?mode=vertical&quality=medium&hozPageSize=1
 
-      const readingId = $getInfo("#wrapper").attr("data-reading-id");
-      const readingBy = $getInfo("#wrapper").attr("data-reading-by");
-      const dataLang = $getInfo("#wrapper").attr("data-lang-code");
-      const mangaId = $getInfo("#wrapper").attr("data-manga-id");
+      const Referer = `/read/${id}`;
+      console.log(Referer);
 
-      const endpoint = `${readingBy}/${readingId}?mode=vertical&quality=high&hozPageSize=1`;
+      // https://mangareader.to/read/one-piece-3  --> essential for making request like browser
 
-      // https://mangareader.to/ajax/image/list/chap/8954?mode=vertical&quality=medium&hozPageSize=1
+      const html = await fetchAPI(Referer, endpoint);
 
-      const $ = await getChaptersUrls(Referer, endpoint);
+      const $ = cheerio.load(html);
 
       const urls = $(".iv-card")
          .map((index, item) => {
-            return $(item).attr("data-url");
+            const obj = {
+               url: null,
+               pageNumber: null,
+            };
+            obj.url = $(item).attr("data-url");
+            obj.pageNumber = index + 1;
+            return obj;
          })
          .get();
 
-      res.status(200).json({ status: "success", data: urls });
+      res.status(200).json({ status: true, totalPage: urls.length, data: urls });
    } catch (error) {
       return res.status(500).json({ status: "error", msg: error.message });
    }
