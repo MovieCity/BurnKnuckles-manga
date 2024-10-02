@@ -119,7 +119,7 @@ export const mainPageExtractor = async (endpoint, res) => {
          status: "success",
          currentPage,
          hasNextPage,
-         totalPage: lastPageNumber,
+         totalPages: lastPageNumber,
          content_Length: mangaData.length,
          data: mangaData,
       });

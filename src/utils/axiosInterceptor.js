@@ -37,6 +37,8 @@ const fetchAPI = async (Referer, endpoint) => {
          },
       });
 
+      console.log(data.html);
+
       return data.html;
    } catch (error) {
       return error.message;
