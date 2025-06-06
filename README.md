@@ -7,7 +7,7 @@ a simple and easy node js api to retrieve data including chapters images
 #### base url
 
 ```http
-https://mangareaderto-api.vercel.app/api/v1
+https://mangareaderto-api.vercel.app/genesis/evangelion
 ```
 
 #### Get trending
