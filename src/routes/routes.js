@@ -20,6 +20,7 @@ const router = express.Router();
 router.get("/genres", getGenres_types_sort);
 
 router.get("/trending", getTrending);
+router.get("/", getTrending);
 
 router.get("/completed", getCompleted);
 router.get("/recommended", getRecommended);
