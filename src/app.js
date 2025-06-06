@@ -8,6 +8,6 @@ app.use(cors());
 app.get("/", (req, res) => {
    res.send([{"sucess": true, "bnc": "BurnKnuckles", "manga-api": "ready to shot some good white data"}]);
 });
-app.use("/api/v1", parserRoutes);
+app.use("/genesis/evangelion", parserRoutes);
 
 export default app;
