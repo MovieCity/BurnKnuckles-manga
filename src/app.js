@@ -6,7 +6,7 @@ const app = express();
 
 app.use(cors());
 app.get("/", (req, res) => {
-   res.send("welcome to manga reader api 🎉🥳");
+   res.send([{"sucess": true, "bnc": "BurnKnuckles", "manga-api": "ready to shot some good white data"}]);
 });
 app.use("/api/v1", parserRoutes);
 
